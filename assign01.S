@@ -81,6 +81,18 @@ setup_button_isr:
     str     r0, [r1]                                           @ Enable interrupts for the butt 
     bx  lr                                                     @ Return from the subroutine
 
+@ Subroutine that triggers the timer alarm after the interval specified in r0
+set_alarm:
+    ldr     r2, =(TIMER_BASE + TIMER_INTE_OFFSET)              @ Load offsetted address of timer interrupt enable register into r2
+    movs    r1, #1                                             @ Set r1 to 1 to enable timer interrupt
+    str     r1, [r2]                                           @ Enable the timer inter
+    ldr     r2, =(TIMER_BASE + TIMER_TIMELR_OFFSET)            @ Load offsetted address of timer value register into r2
+    ldr     r1, [r2]                                           @ Load current timer value into r1
+    add     r1, r0                                             @ Add desired interval to current timer value to get timer value at which alarm should be triggered
+    ldr     r2, =(TIMER_BASE + TIMER_ALARM0_OFFSET)            @ Load offsetted address of timer alarm register into r2
+    str     r1, [r2]                                           @ Store calculated time value into timer alaram regis
+    bx  lr                                                     @ Return from the subroutine
+
     
 .align 4
 msg: .asciz "Hello World!\n"
