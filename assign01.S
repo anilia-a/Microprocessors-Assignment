@@ -48,7 +48,7 @@ main_asm:
     bl      printf                                             @ Print start messag 
 
 main_loop:
-    b   main_loop
+    b       main_loop                                          @ Infinite lo 
 
 @ Subroutine to set up the alarm inter
 setup_alarm_isr:
@@ -88,7 +88,7 @@ set_alarm:
     str     r1, [r2]                                           @ Enable the timer inter
     ldr     r2, =(TIMER_BASE + TIMER_TIMELR_OFFSET)            @ Load offsetted address of timer value register into r2
     ldr     r1, [r2]                                           @ Load current timer value into r1
-    add     r1, r0                                             @ Add desired interval to current timer value to get timer value at which alarm should be triggered
+    add     r1, r0                                             @ Add desired interval to current timer value to get timer value at which alarm should be trigge
     ldr     r2, =(TIMER_BASE + TIMER_ALARM0_OFFSET)            @ Load offsetted address of timer alarm register into r2
     str     r1, [r2]                                           @ Store calculated time value into timer alaram regis
     bx  lr                                                     @ Return from the subroutine
@@ -147,7 +147,75 @@ button_isr:
     bne     down_button_triggered                              @ Branch to down_button_triggered subroutine if r3 is not equal t
     b       enter_button_triggered                             @ If execution reaches here, then enter button must have been triggered
                                                                @ Branch to enter_button_trigg
+up_button_triggered:
+    ldr     r5, =GPIO_BTN_UP_MSK                               @ Load r5 with Up button mask
+    ldr     r0, =up_button_message                             @ Load r0 with up_button_message string
+    bl      printf                                             @ Print up_button_mes
+    ldr     r3, =lstate 	                                   @ Load r3 with address of LED state	             
+    ldr     r3, [r3]                                           @ Load r3 with value of LED state
+    cmp     r3, #DFLT_STATE_STRT                               @ Comapre r3 with start state
+    beq     double_flash_rate                                  @ Branch to double_flash_rate subroutine if LED state is equal to start state
+    ldr     r3, =ltimer                                        @ Else, load r3 with alarm timer interval
+    ldr     r4, =DFLT_ALARM_TIME                               @ Reset the alarm timer interval
+    str     r4, [r3]                                           @ Store resetted interval into ltimer vari
+    b       button_finished                                    @ Branch to the button_finsihed label     
+
+double_flash_rate:             
+    ldr     r5, =GPIO_BTN_UP_MSK                               @ Load r5 with up button mask          
+    ldr     r3, =ltimer                                        @ Load r3 with address of alaram timer interval
+    ldr     r4, [r3]                                           @ Load value at alarm timer interval into r4
+    lsrs    r4, #1                                             @ Shfit r4 right by 1 bit (which halves value in r4)
+    str     r4, [r3]                                           @ Store r4 as new alarm timer interval into ltimer vari
+    b       button_finished                                    @ Branch to button_finished labe
+
+down_button_triggered:             
+    ldr     r5, =GPIO_BTN_DN_MSK                               @ Load address of down button mask into r5                              
+    ldr     r0, =down_button_message                           @ Load address of string down_button_message into r0
+    bl      printf                                             @ Print the down_button_message st
+    ldr     r3, =lstate                                        @ Load address of LED state into r3
+    ldr     r3, [r3]                                           @ Load value of LED state into r3          
+    cmp     r3, #DFLT_STATE_STRT                               @ Compare LED state with start state
+    beq     halve_flash_rate                                   @ If LED state is equal to start state branch to halve_flash_rate 
+    ldr     r3, =ltimer                                        @ Else, load alarm timer interval from ltimer variable into r3
+    ldr     r4, =DFLT_ALARM_TIME                               @ Load default alarm time interval into r4
+    str     r4, [r3]                                           @ Reset interval by writing default alarm time interval into lt
+    b       button_finished                                    @ Branch to the button_finished l
+
+halve_flash_rate:              
+    ldr     r5, =GPIO_BTN_DN_MSK                               @ Load address of down button mask into r5
+    ldr     r3, =ltimer                                        @ Load address of alarm timer interval into r3
+    ldr     r4, [r3]                                           @ Load value of interval into r4
+    lsls    r4, #1                                             @ Shift interval left by 1 (multiply interval by 2)
+    str     r4, [r3]                                           @ Store new alarm timer interval into ltimer vari
+    b       button_finished                                    @ Branch to button_finished label         
+
+enter_button_triggered:            
+    ldr     r5, =GPIO_BTN_EN_MSK                               @ Load address of enter button mask into r5
+    ldr     r0, =enter_button_message                          @ Load address of enter_button_message into r0
+    bl      printf                                             @ Print the enter_button_message st
+    ldr     r3, =lstate                                        @ Load address of LED state into r3               
+    ldr     r4, [r3]                                           @ Load value of LED state into r4
+    movs    r2, #1                                             @ Move the value 1 into r2 
+    eors    r4, r2                                             @ XOR value in r4 with value in r2 (invert the LED state)
+    str     r4, [r3]                                           @ Store value of r4 as new LED state (lstate varia
+    b       button_finished                                    @ Branch to button_finished_label
+
+button_finished:
+    ldr     r2, =(IO_BANK0_BASE + IO_BANK0_INTR2_OFFSET)       @ Load offsetted address of button interrupt register into r2                               
+    str     r5, [r2]                                           @ Write mask into button interrupt register to clear interrupt
+
+    pop     {pc}                                                @ Pop the value of the program counter and return 
+
 .align 4
-msg: .asciz "Hello World!\n"
+start_message:          .asciz "Initialisation completed successfully!\n"
+alarm_message:          .asciz "Alarm Interrupt Triggered!\n"
+led_on_message:         .asciz "Turning LED on!\n"
+led_off_message:        .asciz "Turning LED off!\n"
+led_toggle_message:     .asciz "Successfully toggles LED state!\n" 
+up_button_message:      .asciz "Up Button Triggered! [double rate/reset rate]\n"
+down_button_message:    .asciz "Down Button Triggered! [halve rate/reset rate]\n"
+enter_button_message:   .asciz "Enter Button Triggerd! [toggle LED]\n"
+
 .data
-lstate: .word DFLT_STATE_STRT ltimer: .word DFLT_ALARM_TIME
+lstate: .word DFLT_STATE_STRT
+ltimer: .word DFLT_ALARM_TIME
