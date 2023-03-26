@@ -28,8 +28,25 @@
 
 @ Entry point to the ASM portion of the pr
 main_asm:
-    ldr     r0, =msg
-    bl      printf
+    movs    r0, #GPIO_LED_PIN                                  @ This value is the GPIO LED pin on the PI PICO board
+    bl      asm_gpio_init                                      @ Call the subroutine to initialise the GPIO pin specified by r0
+    movs    r0, #GPIO_LED_PIN                                  @ This value is the GPIO LED pin on the PI PICO board
+    movs    r1, #GPIO_DIR_OUT                                  @ We want this GPIO pin to be setup as an output pin
+    bl      asm_gpio_set_dir                                   @ Call the subroutine to set the GPIO pin specified by r0 to state specified by  
+    movs    r0, #GPIO_BTN_UP                                   @ Load the "up" button into r0
+    bl      asm_gpio_set_irq                                   @ Set up interrupt handling for "up" button
+    movs    r0, #GPIO_BTN_DN                                   @ Load the "down" button into r0    
+    bl      asm_gpio_set_irq                                   @ Set up interrupt handling for "down" button
+    movs    r0, #GPIO_BTN_EN                                   @ Load the "enter" button into r0
+    bl      asm_gpio_set_irq                                   @ Set up interrupt handling for "enter" butt 
+    bl      setup_alarm_isr                                    @ Set up the alarm interrupt     
+    bl      setup_button_isr                                   @ Set up the button interrupt
+    ldr     r0, =ltimer                                        @ Load addresss of the alarm time into r0
+    ldr     r0, [r0]                                           @ Load value of the alarm time into r 
+    bl      set_alarm                                          @ Call subroutine to set the timer alarm
+    ldr     r0, =start_message                                 @ Load start message into r0
+    bl      printf                                             @ Print start messag 
+
 main_loop:
     b   main_loop
     
