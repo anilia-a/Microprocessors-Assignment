@@ -65,6 +65,22 @@ setup_alarm_isr:
     str     r0, [r1]                                           @ Enable the interrru 
     bx  lr                                                     @ Return from the subrouti 
 
+@ Subroutine that sets up the button inter
+setup_button_isr:
+    ldr     r2, =(PPB_BASE + M0PLUS_VTOR_OFFSET)               @ Load vector table address into r2 
+    ldr     r1, [r2]                                           @ Load value at vector table address into r1
+    movs    r2, #GPIO_ISR_OFFSET                               @ Load button offset into r2
+    add     r2, r1                                             @ Add button offset to r1
+    ldr     r0, =button_isr                                    @ Load address of button ISR into r0
+    str     r0, [r2]                                           @ Store the address of the button ISR into the vector tab 
+    movs    r0, #1                                             @ Load 1 into r0 for clearing and setting interrupts
+    movs    r0, r0, LSL #13                                    @ Shift interrupt enable bit into correct position
+    ldr     r1, =(PPB_BASE + M0PLUS_NVIC_ICPR_OFFSET)          @ Load offsetted NVIC Interrupt Clear Pending register address into r1            
+    str     r0, [r1]                                           @ Clear any pending interrupts for the button
+    ldr     r1, =(PPB_BASE + M0PLUS_NVIC_ISER_OFFSET)          @ Load offsetted NVIC Interrupt Set Enable register address into r1
+    str     r0, [r1]                                           @ Enable interrupts for the butt 
+    bx  lr                                                     @ Return from the subroutine
+
     
 .align 4
 msg: .asciz "Hello World!\n"
