@@ -93,6 +93,20 @@ set_alarm:
     str     r1, [r2]                                           @ Store calculated time value into timer alaram regis
     bx  lr                                                     @ Return from the subroutine
 
+@ Interrupt Service Routine for Alarm
+.thumb_func                                                    @ Required for interrupt handling
+alarm_isr:
+    push    {lr}                                               @ Store link register to the stack as we call nested subroutines
+    ldr     r0, =alarm_message                                 @ Load alarm message string into r0
+    bl      printf                                             @ Print mes
+    ldr     r2, =(TIMER_BASE + TIMER_INTR_OFFSET)              @ Load offsetted address of timer interrupt register into r2
+    movs    r1, #1                                             @ Set r1 to 1 to acknowledge the timer interrupt
+    str     r1, [r2]                                           @ Store r1 back int
+    ldr     r1, =lstate                                        @ Load address of the LED's state into r1       
+    ldr     r1, [r1]                                           @ Load value of the LED's state into r1    
+    cmp     r1, DFLT_STATE_STOP                                @ Compare value of LED state with the stop state
+    beq     no_toggle                                          @ If LED state is equal to the stop state, don't toggle LED
+    bl      toggle_led                                         @ Else, call toggle_led subroutine to toggle the state of the
     
 .align 4
 msg: .asciz "Hello World!\n"
