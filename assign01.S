@@ -130,6 +130,23 @@ led_set_state:
     bl      asm_gpio_put                                       @ Update the the value of the LED GPIO pin (based on value in 
     pop     {pc}                                               @ Pop the link register from the stack to the program cou
 
+@ Interrupt Service Routine for B
+.thumb_func                                                    @ Required for interrupt handling
+button_isr:
+    push    {lr}                                               @ Save the link register onto the stack                   
+    @ Check which button was pr
+    ldr     r1, =(IO_BANK0_BASE + IO_BANK0_PROC0_INTS2_OFFSET) @ Load offsetted address of GPIO interrupt status register into r1              
+    ldr     r2, [r1]                                           @ Load value at offsetted address into
+    ldr     r3, =GPIO_BTN_UP_MSK                               @ Load r3 with the "up" button mask          
+    ands    r3, r2                                             @ AND value in r2 with r3, leaving only the relevant bit for up button
+    cmp     r3, #0                                             @ Compare r3 with 0 
+    bne     up_button_triggered                                @ Branch to up_button_triggered subrouint if r3 is not equal 
+    ldr     r3, =GPIO_BTN_DN_MSK                               @ Load r3 with the "down" button mask               
+    ands    r3, r2                                             @ AND the value in r2 with r3, leaving only the relevant bit for down button    
+    cmp     r3, #0                                             @ Compare r3 with 0
+    bne     down_button_triggered                              @ Branch to down_button_triggered subroutine if r3 is not equal t
+    b       enter_button_triggered                             @ If execution reaches here, then enter button must have been triggered
+                                                               @ Branch to enter_button_trigg
 .align 4
 msg: .asciz "Hello World!\n"
 .data
