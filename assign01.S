@@ -49,6 +49,22 @@ main_asm:
 
 main_loop:
     b   main_loop
+
+@ Subroutine to set up the alarm inter
+setup_alarm_isr:
+    ldr     r2, =(PPB_BASE + M0PLUS_VTOR_OFFSET)               @ Load vector table address into r2
+    ldr     r1, [r2]                                           @ Load value at vector table address into r1
+    movs    r2, #ALRM_ISR_OFFSET                               @ Load alarm offset into r2
+    add     r2, r1                                             @ Add alarm offset to r1 to get address of the alarm ISR
+    ldr     r0, =alarm_isr                                     @ Load alarm ISR address into r0
+    str     r0, [r2]                                           @ Save alarm ISR address into vector tab 
+    movs    r0, #1                                             @ Load 1 into r0 for clearing and setting interrupt
+    ldr     r1, =(PPB_BASE + M0PLUS_NVIC_ICPR_OFFSET)          @ Load 1 into r0 for clearing and setting interrupt
+    str     r0, [r1]                                           @ Clear the pending interrupt 
+    ldr     r1, =(PPB_BASE + M0PLUS_NVIC_ISER_OFFSET)          @ Clear the pending interrupt 
+    str     r0, [r1]                                           @ Enable the interrru 
+    bx  lr                                                     @ Return from the subrouti 
+
     
 .align 4
 msg: .asciz "Hello World!\n"
