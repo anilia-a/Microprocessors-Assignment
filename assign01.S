@@ -107,7 +107,29 @@ alarm_isr:
     cmp     r1, DFLT_STATE_STOP                                @ Compare value of LED state with the stop state
     beq     no_toggle                                          @ If LED state is equal to the stop state, don't toggle LED
     bl      toggle_led                                         @ Else, call toggle_led subroutine to toggle the state of the
-    
+
+no_toggle:
+    ldr     r0, =ltimer                                        @ Load address of alarm timer interval into r0
+    ldr     r0, [r0]                                           @ Load value of alarm timer interval into r0           
+    bl      set_alarm                                          @ Call set_alarm subroutine to set a new alarm timer inter
+    pop     {pc}                                               @ Restore return address and return to main pro
+
+toggle_led:
+    push    {lr}                                               @ Store the link register to the stack as we will call nested subroutines
+    movs    r0, #GPIO_LED_PIN                                  @ Set the LED GPIO pin number to r0 for use by asm_gpio_get
+    bl      asm_gpio_get                                       @ Get current the value of the LED GPIO pin (returns to r0)
+    cmp     r0, #LED_VAL_OFF                                   @ Check if the LED GPIO pin value is "off"
+    beq     led_set_on                                         @ If it is "off" then then jump code to to turn it on
+led_set_off:                       
+    movs    r1, #LED_VAL_OFF                                   @ The LED is currently "on" so we want to turn it "off"
+    b       led_set_state                                      @ Jump to portion of code where we set the state of the LED
+led_set_on:                    
+    movs    r1, #LED_VAL_ON                                    @ The LED is currently "off" so we want to turn it "on"
+led_set_state:                     
+    movs    r0, #GPIO_LED_PIN                                  @ Set the LED GPIO pin number to r0 for use by asm_gpio_put
+    bl      asm_gpio_put                                       @ Update the the value of the LED GPIO pin (based on value in 
+    pop     {pc}                                               @ Pop the link register from the stack to the program cou
+
 .align 4
 msg: .asciz "Hello World!\n"
 .data
